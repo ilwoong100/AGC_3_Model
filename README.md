@@ -1,1 +1,1 @@
-# AGC_3_Model
+# DIAL_MWP_model
