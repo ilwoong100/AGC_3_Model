@@ -1,5 +1,6 @@
 import numpy as np
 
+
 class BatchSampler:
     def __init__(self, data_size, batch_size, drop_remain=False, shuffle=False):
         self.data_size = data_size
@@ -28,6 +29,7 @@ class BatchSampler:
         else:
             return int(np.ceil(self.data_size / self.batch_size))
 
+
 class DataBatcher:
     def __init__(self, *data_source, batch_size, drop_remain=False, shuffle=False):
         self.data_source = list(data_source)
@@ -40,7 +42,7 @@ class DataBatcher:
                 self.data_source[i] = np.array(d)
 
         self.data_size = len(self.data_source[0])
-        if len(self.data_source)> 1:
+        if len(self.data_source) > 1:
             flag = np.all([len(src) == self.data_size for src in self.data_source])
             if not flag:
                 raise ValueError("All elements in data_source should have same lengths")
@@ -48,7 +50,7 @@ class DataBatcher:
         self.sampler = BatchSampler(self.data_size, self.batch_size, self.drop_remain, self.shuffle)
         self.iterator = iter(self.sampler)
 
-        self.n=0
+        self.n = 0
 
     def __next__(self):
         batch_idx = next(self.iterator)
