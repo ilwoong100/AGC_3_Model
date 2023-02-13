@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=0 python main.py --dataset "예시 data경로 chall_221104_1200/base_bt" --model_name TM_Generation_1step --seed 0 --gpu 0
