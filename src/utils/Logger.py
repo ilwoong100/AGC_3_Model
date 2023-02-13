@@ -1,6 +1,7 @@
+import logging
 import os
 from time import strftime
-import logging
+
 
 def make_log_dir(log_dir):
     """
@@ -17,15 +18,16 @@ def make_log_dir(log_dir):
     if len(log_dirs) == 0:
         idx = 0
     else:
-        idx_list = sorted([int(d.split('_')[0]) for d in log_dirs])
+        idx_list = sorted([int(d.split("_")[0]) for d in log_dirs])
         idx = idx_list[-1] + 1
 
-    cur_log_dir = '%d_%s' % (idx, strftime('%Y%m%d-%H%M'))
+    cur_log_dir = "%d_%s" % (idx, strftime("%Y%m%d-%H%M"))
     full_log_dir = os.path.join(log_dir, cur_log_dir)
     if not os.path.exists(full_log_dir):
         os.mkdir(full_log_dir)
 
     return full_log_dir
+
 
 class Logger:
     def __init__(self, log_dir):
@@ -43,7 +45,9 @@ class Logger:
         console_handler.setLevel(logging.INFO)
         console_handler.setFormatter(logging.Formatter(log_console_format))
 
-        file_handler = logging.FileHandler(os.path.join(log_dir, 'experiments.log'), encoding='UTF-8')
+        file_handler = logging.FileHandler(
+            os.path.join(log_dir, "experiments.log"), encoding="UTF-8"
+        )
         file_handler.setLevel(logging.DEBUG)
         file_handler.setFormatter(logging.Formatter(log_file_format))
 
@@ -58,6 +62,7 @@ class Logger:
             self.logger.removeHandler(handle)
         logging.shutdown()
 
+
 def setup_logger(log_dir):
     log_file_format = "[%(lineno)d]%(asctime)s: %(message)s"
     log_console_format = "%(message)s"
@@ -71,7 +76,7 @@ def setup_logger(log_dir):
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(logging.Formatter(log_console_format))
 
-    file_handler = logging.FileHandler(os.path.join(log_dir, 'experiments.log'))
+    file_handler = logging.FileHandler(os.path.join(log_dir, "experiments.log"))
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(logging.Formatter(log_file_format))
 
@@ -79,6 +84,7 @@ def setup_logger(log_dir):
     logger.addHandler(file_handler)
 
     return logger
+
 
 # class logger:
 #     def __init__(self, log_dir, filename='log.txt'):
