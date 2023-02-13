@@ -1,14 +1,11 @@
+import json
 import os
 import re
-import json
 
 import numpy as np
-
+from pythonds.basic import Stack
 from tqdm import tqdm
 from time import time
-from pythonds.basic import Stack
-
-from IPython import embed
 
 string_list = [
     # (가)-(하)
