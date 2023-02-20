@@ -82,7 +82,7 @@ class Dataset:
             self.load_data_chall(model_name, data_dir)
 
         # For final submission (dataset/problemsheet.json)
-        if 'dataset' in self.data_name:
+        elif 'dataset' in self.data_name:
             self.load_data_submit(model_name, data_dir)
 
     def load_data_chall(self, model_name, data_dir):
