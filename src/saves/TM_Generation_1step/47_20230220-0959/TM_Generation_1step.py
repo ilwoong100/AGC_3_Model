@@ -81,7 +81,7 @@ class TM_Generation_1step(BaseModel):
         template_vocab_idx_in_bert = self.tokenizer.convert_tokens_to_ids(list(self.dataset.templatetoken2idx.keys())) # list of template token ids in BERT
 
         all_template_tokens = list(self.dataset.templatetoken2idx.keys())
-        self.always_possible_tokens = ['[PAD]', '[BOS]', '[EOS]']
+        self.always_possible_tokens = ['[PAD]', '[BOS]', '[EOS]', '[MASK]']
         for token in all_template_tokens:
             if token.startswith('[C'):
                 self.always_possible_tokens.append(token)
@@ -313,12 +313,13 @@ class TM_Generation_1step(BaseModel):
                 # get batch data
                 batch_indices = dataset.train_ids[batch_idx]
                 batch_imq_text = [full_imq_text[i] for i in batch_indices]
+                print(batch_imq_text)
                 batch_template_text = [full_template[i] for i in batch_indices]
 
                 # Tokenize IMQ
                 batch_imq_token = self.tokenizer(batch_imq_text, padding=True, truncation=True, max_length=self.bert_max_len, return_tensors='np')
-                
                 batch_imq_id, batch_imq_attention = batch_imq_token['input_ids'], batch_imq_token['attention_mask']
+
                 if self.do_mask_imq:
                     batch_imq_id_new = []
                     for idx, s in enumerate(batch_indices):

@@ -98,7 +98,6 @@ class TM_Generation_1step(BaseModel):
         # BERT Encoder
         self.bert = AutoModel.from_pretrained(self.pretrained_path)
         self.tokenizer = AutoTokenizer.from_pretrained(self.pretrained_path)
-        print(self.tokenizer)
         # Add New Tokens (장소, 명칭, 인물)
         new_tokens = '(가) (나) (다) (라) (마) (바) (사) (아) (자) (차) (카) (타) (파) (하) 리터 l 밀리리터 ml 킬로미터 km 미터 m 센티미터 cm kg 제곱센티미터 ㎠ 세제곱센티미터 제곱미터 세제곱미터 ㎡ ㎤ ㎥'.split(' ')
         # Add New Tokens for Encoding Template using BERT
@@ -317,8 +316,8 @@ class TM_Generation_1step(BaseModel):
 
                 # Tokenize IMQ
                 batch_imq_token = self.tokenizer(batch_imq_text, padding=True, truncation=True, max_length=self.bert_max_len, return_tensors='np')
-                
                 batch_imq_id, batch_imq_attention = batch_imq_token['input_ids'], batch_imq_token['attention_mask']
+
                 if self.do_mask_imq:
                     batch_imq_id_new = []
                     for idx, s in enumerate(batch_indices):

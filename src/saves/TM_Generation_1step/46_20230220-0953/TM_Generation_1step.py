@@ -317,8 +317,8 @@ class TM_Generation_1step(BaseModel):
 
                 # Tokenize IMQ
                 batch_imq_token = self.tokenizer(batch_imq_text, padding=True, truncation=True, max_length=self.bert_max_len, return_tensors='np')
-                
                 batch_imq_id, batch_imq_attention = batch_imq_token['input_ids'], batch_imq_token['attention_mask']
+
                 if self.do_mask_imq:
                     batch_imq_id_new = []
                     for idx, s in enumerate(batch_indices):

@@ -1,7 +1,7 @@
 import json
 import os
 import re
-
+import random
 import numpy as np
 from pythonds.basic import Stack
 from tqdm import tqdm
@@ -82,7 +82,7 @@ class Dataset:
             self.load_data_chall(model_name, data_dir)
 
         # For final submission (dataset/problemsheet.json)
-        if 'dataset' in self.data_name:
+        elif 'dataset' in self.data_name:
             self.load_data_submit(model_name, data_dir)
 
     def load_data_chall(self, model_name, data_dir):
@@ -133,7 +133,10 @@ class Dataset:
         self.string5_list = [s for s in string_list if len(s) == 5]
 
         # Set train/valid/test ids
-        self.train_ids = self.set_values(train_json, start_idx=0 )
+        train_datas = len(train_json)
+        for i in range(train_datas, train_datas *2):
+            train_json[str(i)] = train_json[str(i-train_datas +1)].copy()
+        self.train_ids = self.set_values(train_json, start_idx=0 , use_mask=1)
         self.valid_ids = self.set_values(valid_json, start_idx=1000000)
         self.test_ids = []
         for i, test_json in enumerate(test_jsons):
@@ -154,7 +157,7 @@ class Dataset:
         for i, (test_json, test_path) in enumerate(zip(test_jsons, test_paths)):
             self.save_dataloader_to_file(test_json, test_path, start_idx=10000000*(i+1))
 
-    def set_values(self, json, start_idx):       
+    def set_values(self, json, start_idx, use_mask=0):       
         idxes = []
         for json_idx in json.keys():
             idx = int(json_idx) + start_idx
@@ -377,9 +380,27 @@ class Dataset:
                     IMQ += ISC + ' '
 
                 IMQ += word + ' '
-
-            self.idx2IMQ[idx] = IMQ.strip()
             
+            
+
+            if use_mask == 1:
+                IMQ = IMQ.strip()
+                IMQ = IMQ.split(' ')
+                maskwordsidx = random.sample(range(len(IMQ)), (len(IMQ)//15 + 1))
+
+                for i in maskwordsidx:
+                    while(True):
+                        if '[' not in IMQ[i] :
+                            IMQ[i] = '[MASK]'
+                            break
+                        else:
+                            i = i+1
+                            if i == len(IMQ):
+                                i=0
+                    self.idx2IMQ[idx] = (' ').join(IMQ)
+            else:
+                self.idx2IMQ[idx] = IMQ.strip()
+
             if self.mode == 'chall':
                 # postfix -> NET (For TM-generation)
                 NET = postfix.split()
