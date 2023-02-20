@@ -14,7 +14,7 @@ Rule-based 방식으로 symbol형태로 전환 후 이를 이용하여 본 연�
 
 ## 실행방법
 
-    CUDA_VISIBLE_DEVICES=0 python main.py --dataset "예시 data경로 chall_221104_1200/base_bt" --model_name TM_Generation_1step --seed 0 --gpu 0
+    CUDA_VISIBLE_DEVICES=0 python main.py --dataset "예시 data경로 chall/base_bt" --model_name TM_Generation_1step --seed 0 --gpu 0
 
 ## 데이터셋
 data폴더에 학습 및 평가 데이터를 넣어주셔야 합니다.
