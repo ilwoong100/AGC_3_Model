@@ -1,1 +1,1 @@
-CUDA_VISIBLE_DEVICES=1 python main.py --dataset chall/DIAL_MWP-Dataset/dataset --model_name TM_Generation_1step --seed 0 --gpu 1
+CUDA_VISIBLE_DEVICES=0 python main.py --dataset chall/DIAL_MWP-Dataset/dataset --model_name TM_Generation_1step --seed 0 --gpu 0

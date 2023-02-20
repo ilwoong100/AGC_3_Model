@@ -133,9 +133,11 @@ class Dataset:
         self.string5_list = [s for s in string_list if len(s) == 5]
 
         # Set train/valid/test ids
-        train_datas = len(train_json)
-        for i in range(train_datas, train_datas *2):
-            train_json[str(i)] = train_json[str(i-train_datas +1)].copy()
+
+        # When using double mask, has to use below 3lines
+        # train_datas = len(train_json)
+        # for i in range(train_datas, train_datas *2 + 1):
+        #     train_json[str(i)] = train_json[str(i-train_datas +1)].copy()
         self.train_ids = self.set_values(train_json, start_idx=0 , use_mask=1)
         self.valid_ids = self.set_values(valid_json, start_idx=1000000)
         self.test_ids = []
@@ -382,7 +384,7 @@ class Dataset:
                 IMQ += word + ' '
             
             
-
+            # Implement mask to input question, if use_mask==1
             if use_mask == 1:
                 IMQ = IMQ.strip()
                 IMQ = IMQ.split(' ')
