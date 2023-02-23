@@ -67,7 +67,9 @@ def main_train_test(argv):
     # build model
     model = MODEL_CLASS(dataset, config['Model'], device)
     model.logger = logger
-    
+    if config['Model']['restore_path'] != 'None':
+        model.restore(config['Model']['restore_path'])
+        print(config['Model']['restore_path'])
     ################################## TRAIN & PREDICT
     # train
     try:

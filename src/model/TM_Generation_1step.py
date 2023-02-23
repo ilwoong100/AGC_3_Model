@@ -21,7 +21,7 @@ from transformers import (
     AutoTokenizer,
     get_linear_schedule_with_warmup,
 )
-
+np.random.seed(0)
 
 class TM_Generation_1step(BaseModel):
     def __init__(self, dataset, model_conf, device):
@@ -53,7 +53,7 @@ class TM_Generation_1step(BaseModel):
         self.bert_conf = AutoConfig.from_pretrained(self.pretrained_path)
         self.bert_max_len = model_conf['bert_max_len']
         
-        self.do_mask_imq = model_conf.get('do_mask_imq', False)
+        self.do_mask_imq = model_conf.get('do_mask_imq', True)
         self.imq_mask_ratio = model_conf.get('imq_mask_ratio', 0.1)
         
         self.decode_only_input_token = model_conf['decode_only_input_token']
@@ -98,7 +98,6 @@ class TM_Generation_1step(BaseModel):
         # BERT Encoder
         self.bert = AutoModel.from_pretrained(self.pretrained_path)
         self.tokenizer = AutoTokenizer.from_pretrained(self.pretrained_path)
-        print(self.tokenizer)
         # Add New Tokens (장소, 명칭, 인물)
         new_tokens = '(가) (나) (다) (라) (마) (바) (사) (아) (자) (차) (카) (타) (파) (하) 리터 l 밀리리터 ml 킬로미터 km 미터 m 센티미터 cm kg 제곱센티미터 ㎠ 세제곱센티미터 제곱미터 세제곱미터 ㎡ ㎤ ㎥'.split(' ')
         # Add New Tokens for Encoding Template using BERT
@@ -172,7 +171,33 @@ class TM_Generation_1step(BaseModel):
         ###########################################################################################
 
         self.to(self.device)
+    def pad_sequence(self,sequences, maxlen=None, dtype='int32', padding='post', truncating='post', value=0):
+        """
+        sequences: List[List[int]] or List[ndarray], shape (batch_size, sequence_length)
+        maxlen: int, maximum length of all sequences. If not specified, it will be set to the maximum length in sequences.
+        dtype: data type of the output sequences.
+        padding: 'pre' or 'post', pad either before or after each sequence.
+        truncating: 'pre' or 'post', remove values from sequences larger than maxlen either in the beginning or in the end of the sequence.
+        value: float or int, padding value to use.
+        """
+        # Find maxlen if not specified
+        if maxlen is None:
+            maxlen = len(sequences)
 
+        # Initialize output array
+        padded_sequences = np.full(( maxlen,), value, dtype=dtype)
+
+        # Pad and truncate sequences
+        if truncating == 'pre':
+            trunc = sequences[-maxlen:]
+        else:
+            trunc = sequences[:maxlen]
+        if padding == 'pre':
+            padded_sequences[-len(trunc):] = trunc
+        else:
+            padded_sequences[:len(trunc)] = trunc
+
+        return padded_sequences
     # INPUT: IMQ // OUTPUT: Template
     def forward(self, batch_question_id, batch_question_attention, batch_template_id, batch_template_attention, batch_lastop_id):
         '''
@@ -278,6 +303,7 @@ class TM_Generation_1step(BaseModel):
         test_from = exp_config['test_from']
         save_step = exp_config['save_step']
         verbose = exp_config['verbose']
+        is_selfsupervised = exp_config['is_selfsupervised']
         self.log_dir = logger.log_dir
         self.global_step = 0
         start = time()
@@ -319,8 +345,9 @@ class TM_Generation_1step(BaseModel):
                 batch_imq_token = self.tokenizer(batch_imq_text, padding=True, truncation=True, max_length=self.bert_max_len, return_tensors='np')
                 
                 batch_imq_id, batch_imq_attention = batch_imq_token['input_ids'], batch_imq_token['attention_mask']
-                if self.do_mask_imq:
+                if is_selfsupervised == 'D' or is_selfsupervised=='I' or is_selfsupervised=='M':
                     batch_imq_id_new = []
+                    batch_maxlen = batch_imq_id[0].shape[0]
                     for idx, s in enumerate(batch_indices):
                         # exclude special tokens (INC, IXC, IEC, ISC, SEP, CLS)
                         tmp_list = []
@@ -328,6 +355,8 @@ class TM_Generation_1step(BaseModel):
                         tmp_list += self.dataset.idx2IXC[s]
                         tmp_list += self.dataset.idx2IEC[s]
                         tmp_list += self.dataset.idx2ISC[s]
+                        tmp_list += '('
+                        tmp_list += ')'
                         special_tokens = self.tokenizer(' '.join(tmp_list), add_special_tokens=False)['input_ids']
                         special_tokens.append(self.tokenizer.convert_tokens_to_ids(self.tokenizer.sep_token))
                         special_tokens.append(self.tokenizer.convert_tokens_to_ids(self.tokenizer.cls_token))
@@ -337,11 +366,38 @@ class TM_Generation_1step(BaseModel):
                         # Candidate token indices to be deleted
                         candidate_indices = np.where(~np.in1d(batch_imq_token_idx, special_tokens) * batch_imq_attention[idx])[0]
                         
+                        #infilling IMQ
+                        if is_selfsupervised=='I':
+                            mask_indices = np.random.choice(candidate_indices, size=int(len(candidate_indices)*self.imq_mask_ratio), replace=False)
+                            mask_indices = mask_indices[np.argsort(-mask_indices)]
+                            end_indices=[]
+                            for idx, indice in enumerate(mask_indices):
+                                end=indice
+                                for i in range(4):
+                                    if (indice+i) in candidate_indices and (indice+i) != mask_indices[idx-1]:
+                                        end = indice+i
+                                        continue
+                                    else:
+                                        break
+                                if end+1 > batch_maxlen:
+                                    end_indices.append(end)
+                                else:
+                                    end_indices.append(end+1)
+                            for startend in zip(mask_indices, end_indices):
+                                batch_imq_token_idx = np.delete(batch_imq_token_idx, np.arange(startend[0], startend[1]))
+                                batch_imq_token_idx = np.insert(batch_imq_token_idx, startend[0], self.tokenizer.convert_tokens_to_ids(self.tokenizer.mask_token))
+                            batch_imq_token_idx = self.pad_sequence(sequences=batch_imq_token_idx, maxlen=batch_maxlen)
+                        #delete IMQ
+                        elif is_selfsupervised == 'D':
+                            mask_indices = np.random.choice(candidate_indices, size=int(len(candidate_indices)*self.imq_mask_ratio), replace=False)
+                            batch_imq_token_idx = np.delete(batch_imq_token_idx,mask_indices)
+                            batch_imq_token_idx = self.pad_sequence(sequences=batch_imq_token_idx, maxlen=batch_maxlen)
                         # Mask IMQ
-                        mask_indices = np.random.choice(candidate_indices, size=int(len(candidate_indices)*self.imq_mask_ratio), replace=False)
-                        batch_imq_token_idx[mask_indices] = self.tokenizer.convert_tokens_to_ids(self.tokenizer.mask_token)
+                        else:
+                            mask_indices = np.random.choice(candidate_indices, size=int(len(candidate_indices)*self.imq_mask_ratio), replace=False)
+                            batch_imq_token_idx[mask_indices] = self.tokenizer.convert_tokens_to_ids(self.tokenizer.mask_token)
+          
                         batch_imq_id_new.append(batch_imq_token_idx)
-                        
                     batch_imq_id = np.array(batch_imq_id_new)
                     
                 # Get template id, attention, lastop
@@ -771,6 +827,7 @@ class TM_Generation_1step(BaseModel):
 
         for n, p in self.named_parameters():
             p.data, self.swa_state[n] = self.swa_state[n], p.data
+
 
 
 class PositionalEncoding(nn.Module):

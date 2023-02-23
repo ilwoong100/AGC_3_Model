@@ -384,24 +384,24 @@ class Dataset:
                 IMQ += word + ' '
             
             
-            # Implement mask to input question, if use_mask==1
-            if use_mask == 1:
-                IMQ = IMQ.strip()
-                IMQ = IMQ.split(' ')
-                maskwordsidx = random.sample(range(len(IMQ)), (len(IMQ)//15 + 1))
+            # # Implement mask to input question, if use_mask==1
+            # if use_mask == 1:
+            #     IMQ = IMQ.strip()
+            #     IMQ = IMQ.split(' ')
+            #     maskwordsidx = random.sample(range(len(IMQ)), (len(IMQ)//15 + 1))
 
-                for i in maskwordsidx:
-                    while(True):
-                        if '[' not in IMQ[i] :
-                            IMQ[i] = '[MASK]'
-                            break
-                        else:
-                            i = i+1
-                            if i == len(IMQ):
-                                i=0
-                    self.idx2IMQ[idx] = (' ').join(IMQ)
-            else:
-                self.idx2IMQ[idx] = IMQ.strip()
+            #     for i in maskwordsidx:
+            #         while(True):
+            #             if '[' not in IMQ[i] :
+            #                 IMQ[i] = '[MASK]'
+            #                 break
+            #             else:
+            #                 i = i+1
+            #                 if i == len(IMQ):
+            #                     i=0
+            #         self.idx2IMQ[idx] = (' ').join(IMQ)
+            # else:
+            self.idx2IMQ[idx] = IMQ.strip()
 
             if self.mode == 'chall':
                 # postfix -> NET (For TM-generation)
